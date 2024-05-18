@@ -51,7 +51,7 @@ def login():
             recaptcha_response = request.form.get('g-recaptcha-response')
             if not recaptcha_response:
                 msg = 'Please complete the reCAPTCHA'
-                return render_template('index.html', msg=msg)
+                return render_template('index.html', error=msg)
 
             recaptcha_secret = '6LcFr5spAAAAAISIBeHQAguCWzyF14JXWvOfgP7J'
             recaptcha_verify_url = 'https://www.google.com/recaptcha/api/siteverify'
@@ -64,7 +64,7 @@ def login():
 
             if not result.get('success'):
                 msg = 'Invalid reCAPTCHA. Please try again.'
-                return render_template('index.html', msg=msg)
+                return render_template('index.html', error=msg)
 
         if account:
             session['login_attempts'] = 0  # Reset login attempts on successful login
@@ -82,7 +82,7 @@ def login():
             session['login_attempts'] += 1
             msg = 'Incorrect username/password!'
 
-    return render_template('index.html', msg=msg)
+    return render_template('index.html', error=msg)
 
 # http://localhost:5000/logout - this will be the logout page
 @app.route('/flasklogin/logout')
@@ -115,7 +115,7 @@ def register():
         # If account exists show error and validation checks
         if account:
             msg = 'Username already exists!'
-            return render_template('register.html', msg=msg)
+            return render_template('register.html', error=msg)
         
         # Check if username and email already exists
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -124,12 +124,16 @@ def register():
 
         if account:
             msg = 'Email already exists!'
+            return render_template('register.html', error=msg)
         elif not re.match(r'[^@]+@[^@]+\.[^@]+', email):
             msg = 'Invalid email address!'
+            return render_template('register.html', error=msg)
         elif not re.match(r'[A-Za-z0-9]+', username):
             msg = 'Username must contain only characters and numbers!'
+            return render_template('register.html', error=msg)
         elif not username or not password or not email:
             msg = 'Please fill out the form!'
+            return render_template('register.html', error=msg)
         else:
             # Hash the password
             hash = password + app.secret_key
@@ -139,13 +143,13 @@ def register():
             cursor.execute('INSERT INTO users (name, username, password, email) VALUES (%s, %s, %s, %s)', (name, username, password, email,))
             mysql.connection.commit()
             msg = 'You have successfully registered!'
-            return render_template('index.html', msg=msg)
+            return render_template('index.html', error=msg)
 
     elif request.method == 'POST':
         # Form is empty... (no POST data)
         msg = 'Please fill out the form!'
     # Show registration form with message (if any)
-    return render_template('register.html', msg=msg)
+    return render_template('register.html', error=msg)
 
 # http://localhost:5000/flasklogin/home - this will be the home page, only accessible for logged in users
 @app.route('/flasklogin/home')
@@ -205,7 +209,7 @@ def verify_2fa():
                 session['loggedin'] = True
                 return redirect(url_for('home'))
             else:
-                return "Invalid 2FA code", 400
+                return render_template('2fa.html', error='Invalid 2FA code')
     return redirect(url_for('login'))
 
 @app.route('/flasklogin/enable_2fa', methods=['GET', 'POST'])
@@ -222,7 +226,7 @@ def enable_2fa():
 
             # Generate QR code
             totp = pyotp.TOTP(secret)
-            uri = totp.provisioning_uri(session['username'], issuer_name="YourApp")
+            uri = totp.provisioning_uri(session['username'], issuer_name="Login-Auth-JMPL")
             img = qrcode.make(uri)
             buf = BytesIO()
             img.save(buf)
@@ -249,7 +253,14 @@ def verify_2fa_enable():
                 mysql.connection.commit()
                 return redirect(url_for('home'))
             else:
-                return "Invalid 2FA code", 400
+                # Generate QR code and secret again
+                secret = pyotp.random_base32()
+                uri = totp.provisioning_uri(session['username'], issuer_name="YourApp")
+                img = qrcode.make(uri)
+                buf = BytesIO()
+                img.save(buf)
+                img_b64 = base64.b64encode(buf.getvalue()).decode()
+                return render_template('enable_2fa.html', qr_code=img_b64, secret=secret, error='Invalid 2FA code')
     return redirect(url_for('login'))
 
 @app.route('/flasklogin/disable_2fa', methods=['POST'])
