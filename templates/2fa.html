@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>2FA Verification</title>
+</head>
+<body>
+    <h2>Two-Factor Authentication</h2>
+    <form action="{{ url_for('verify_2fa') }}" method="post">
+        <label for="code">Enter the code from your authenticator app:</label>
+        <input type="text" id="code" name="code" required>
+        <button type="submit">Verify</button>
+    </form>
+</body>
+</html>

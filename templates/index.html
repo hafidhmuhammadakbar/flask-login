@@ -14,14 +14,17 @@
 				<a href="{{ url_for('register') }}">Register</a>
 			</div>
 			<form action="{{ url_for('login') }}" method="post">
+				<!-- username -->
 				<label for="username">
 					<i class="fas fa-user"></i>
 				</label>
 				<input type="text" name="username" placeholder="Username" id="username" required>
+				<!-- username -->
 				<label for="password">
 					<i class="fas fa-lock"></i>
 				</label>
 				<input type="password" name="password" placeholder="Password" id="password" required>
+
 				<div class="msg">{{ msg }}</div>
 				<input type="submit" value="Login">
 			</form>

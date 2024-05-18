@@ -5,4 +5,16 @@
 {% block content %}
 <h2>Home Page</h2>
 <p>Welcome back, {{ username }}!</p>
+
+{% if is_2fa_enabled %}
+  <p>2FA is enabled.</p>
+  <form action="{{ url_for('disable_2fa') }}" method="POST">
+    <button type="submit" class="btn btn-danger">Disable 2FA</button>
+  </form>
+{% else %}
+  <p>2FA is not enabled.</p>
+  <form action="{{ url_for('enable_2fa') }}" method="POST">
+    <button type="submit" class="btn btn-primary">Enable 2FA</button>
+  </form>
+{% endif %}
 {% endblock %}

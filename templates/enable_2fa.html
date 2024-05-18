@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Enable Two-Factor Authentication</title>
+</head>
+<body>
+    <h2>Enable Two-Factor Authentication</h2>
+    
+    {% if qr_code %}
+        <p>Scan this QR code with your authenticator app:</p>
+        <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code">
+        <p>Alternatively, you can enter this secret key manually in your authenticator app:</p>
+        <code>{{ secret }}</code>
+
+        <h3>Verify Your Setup</h3>
+        <form action="{{ url_for('verify_2fa_enable') }}" method="post">
+            <label for="code">Enter the code from your authenticator app:</label>
+            <input type="text" id="code" name="code" required>
+            <button type="submit">Verify</button>
+        </form>
+    {% else %}
+        <form action="{{ url_for('enable_2fa') }}" method="post">
+            <button type="submit">Enable 2FA</button>
+        </form>
+    {% endif %}
+
+    <p><a href="{{ url_for('home') }}">Back to home</a></p>
+</body>
+</html>
