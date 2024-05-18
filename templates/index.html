@@ -39,6 +39,12 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
         {% endif %}
+				{% if success %}
+        <div class="mt-3 alert alert-primary alert-dismissible fade show" role="alert">
+            <strong>Ooopss!</strong> {{ success }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endif %}
 				<input type="submit" value="Login">
 			</form>
 		</div>

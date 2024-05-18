@@ -139,7 +139,7 @@ def register():
             cursor.execute('INSERT INTO users (name, username, password, email) VALUES (%s, %s, %s, %s)', (name, username, password, email,))
             mysql.connection.commit()
             msg = 'You have successfully registered!'
-            return render_template('index.html', error=msg)
+            return render_template('index.html', success=msg)
 
     elif request.method == 'POST':
         # Form is empty... (no POST data)
