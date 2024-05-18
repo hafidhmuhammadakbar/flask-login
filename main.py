@@ -26,7 +26,7 @@ mysql = MySQL(app)
 def index():
     return redirect(url_for('login'))
 
-# http://localhost:5000/ - the following will be our login page, which will use both GET and POST requests
+# Login
 @app.route('/flasklogin/', methods=['GET', 'POST'])
 def login():
     msg = ''
@@ -84,16 +84,6 @@ def login():
 
     return render_template('index.html', error=msg)
 
-# http://localhost:5000/logout - this will be the logout page
-@app.route('/flasklogin/logout')
-def logout():
-    # Remove session data, this will log the user out
-    session.pop('loggedin', None)
-    session.pop('id', None)
-    session.pop('username', None)
-    # Redirect to login page
-    return redirect(url_for('login'))
-
 # http://localhost:5000/register - this will be the registration page, we need to use both GET and POST requests
 @app.route('/flasklogin/register', methods=['GET', 'POST'])
 def register():
@@ -131,6 +121,12 @@ def register():
         elif not re.match(r'[A-Za-z0-9]+', username):
             msg = 'Username must contain only characters and numbers!'
             return render_template('register.html', error=msg)
+        elif len(username) < 4:
+            msg = 'Username must be at least 4 characters long!'
+            return render_template('register.html', error=msg)
+        elif len(password) < 8:
+            msg = 'Password must be at least 8 characters long!'
+            return render_template('register.html', error=msg)
         elif not username or not password or not email:
             msg = 'Please fill out the form!'
             return render_template('register.html', error=msg)
@@ -150,6 +146,16 @@ def register():
         msg = 'Please fill out the form!'
     # Show registration form with message (if any)
     return render_template('register.html', error=msg)
+
+# http://localhost:5000/logout - this will be the logout page
+@app.route('/flasklogin/logout')
+def logout():
+    # Remove session data, this will log the user out
+    session.pop('loggedin', None)
+    session.pop('id', None)
+    session.pop('username', None)
+    # Redirect to login page
+    return redirect(url_for('login'))
 
 # http://localhost:5000/flasklogin/home - this will be the home page, only accessible for logged in users
 @app.route('/flasklogin/home')
