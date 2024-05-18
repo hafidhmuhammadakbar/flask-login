@@ -79,17 +79,28 @@ def register():
     # Check if "username", "password" and "email" POST requests exist (user submitted form)
     if request.method == 'POST' and 'username' in request.form and 'password' in request.form and 'email' in request.form:
         # Create variables for easy access
+        name = request.form['name']
         username = request.form['username']
         password = request.form['password']
         email = request.form['email']
 
-        # Check if account exists using MySQL
+        # Check if username already exists
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('SELECT * FROM users WHERE username = %s', (username,))
         account = cursor.fetchone()
+
         # If account exists show error and validation checks
         if account:
-            msg = 'Account already exists!'
+            msg = 'Username already exists!'
+            return render_template('register.html', msg=msg)
+        
+        # Check if username and email already exists
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('SELECT * FROM users WHERE email = %s', (email,))
+        account = cursor.fetchone()
+
+        if account:
+            msg = 'Email already exists!'
         elif not re.match(r'[^@]+@[^@]+\.[^@]+', email):
             msg = 'Invalid email address!'
         elif not re.match(r'[A-Za-z0-9]+', username):
@@ -102,7 +113,7 @@ def register():
             hash = hashlib.sha1(hash.encode())
             password = hash.hexdigest()
             # Account doesn't exist, and the form data is valid, so insert the new account into the users table
-            cursor.execute('INSERT INTO users VALUES (NULL, %s, %s, %s)', (username, password, email,))
+            cursor.execute('INSERT INTO users (name, username, password, email) VALUES (%s, %s, %s, %s)', (name, username, password, email,))
             mysql.connection.commit()
             msg = 'You have successfully registered!'
             return render_template('index.html', msg=msg)
