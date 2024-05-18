@@ -43,28 +43,28 @@ def login():
         password = hash.hexdigest()
 
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT * FROM users WHERE username = %s AND password = %s', (username, password))
+        cursor.execute("SELECT * FROM users WHERE username = '{}' AND password = '{}'".format(username, password))
         account = cursor.fetchone()
 
         # Verify reCAPTCHA if the user has failed more than 3 times
-        if session['login_attempts'] >= 3:
-            recaptcha_response = request.form.get('g-recaptcha-response')
-            if not recaptcha_response:
-                msg = 'Please complete the reCAPTCHA'
-                return render_template('index.html', error=msg)
+        # if session['login_attempts'] >= 3:
+        #     recaptcha_response = request.form.get('g-recaptcha-response')
+        #     if not recaptcha_response:
+        #         msg = 'Please complete the reCAPTCHA'
+        #         return render_template('index.html', error=msg)
 
-            recaptcha_secret = '6LcFr5spAAAAAISIBeHQAguCWzyF14JXWvOfgP7J'
-            recaptcha_verify_url = 'https://www.google.com/recaptcha/api/siteverify'
-            payload = {
-                'secret': recaptcha_secret,
-                'response': recaptcha_response
-            }
-            recaptcha_res = requests.post(recaptcha_verify_url, data=payload)
-            result = recaptcha_res.json()
+        #     recaptcha_secret = '6LcFr5spAAAAAISIBeHQAguCWzyF14JXWvOfgP7J'
+        #     recaptcha_verify_url = 'https://www.google.com/recaptcha/api/siteverify'
+        #     payload = {
+        #         'secret': recaptcha_secret,
+        #         'response': recaptcha_response
+        #     }
+        #     recaptcha_res = requests.post(recaptcha_verify_url, data=payload)
+        #     result = recaptcha_res.json()
 
-            if not result.get('success'):
-                msg = 'Invalid reCAPTCHA. Please try again.'
-                return render_template('index.html', error=msg)
+        #     if not result.get('success'):
+        #         msg = 'Invalid reCAPTCHA. Please try again.'
+        #         return render_template('index.html', error=msg)
 
         if account:
             session['login_attempts'] = 0  # Reset login attempts on successful login
@@ -99,7 +99,7 @@ def register():
 
         # Check if username already exists
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT * FROM users WHERE username = %s', (username,))
+        cursor.execute("SELECT * FROM users WHERE username = '{}';".format(username))
         account = cursor.fetchone()
 
         # If account exists show error and validation checks
@@ -109,24 +109,24 @@ def register():
         
         # Check if username and email already exists
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT * FROM users WHERE email = %s', (email,))
+        cursor.execute("SELECT * FROM users WHERE email = '{}';".format(email))
         account = cursor.fetchone()
 
         if account:
             msg = 'Email already exists!'
             return render_template('register.html', error=msg)
-        elif not re.match(r'[^@]+@[^@]+\.[^@]+', email):
-            msg = 'Invalid email address!'
-            return render_template('register.html', error=msg)
-        elif not re.match(r'[A-Za-z0-9]+', username):
-            msg = 'Username must contain only characters and numbers!'
-            return render_template('register.html', error=msg)
-        elif len(username) < 4:
-            msg = 'Username must be at least 4 characters long!'
-            return render_template('register.html', error=msg)
-        elif len(password) < 8:
-            msg = 'Password must be at least 8 characters long!'
-            return render_template('register.html', error=msg)
+        # elif not re.match(r'[^@]+@[^@]+\.[^@]+', email):
+        #     msg = 'Invalid email address!'
+        #     return render_template('register.html', error=msg)
+        # elif not re.match(r'[A-Za-z0-9]+', username):
+        #     msg = 'Username must contain only characters and numbers!'
+        #     return render_template('register.html', error=msg)
+        # elif len(username) < 4:
+        #     msg = 'Username must be at least 4 characters long!'
+        #     return render_template('register.html', error=msg)
+        # elif len(password) < 8:
+        #     msg = 'Password must be at least 8 characters long!'
+        #     return render_template('register.html', error=msg)
         elif not username or not password or not email:
             msg = 'Please fill out the form!'
             return render_template('register.html', error=msg)
@@ -136,10 +136,10 @@ def register():
             hash = hashlib.sha1(hash.encode())
             password = hash.hexdigest()
             # Account doesn't exist, and the form data is valid, so insert the new account into the users table
-            cursor.execute('INSERT INTO users (name, username, password, email) VALUES (%s, %s, %s, %s)', (name, username, password, email,))
+            cursor.execute("INSERT INTO users (name, username, password, email) VALUES ('{}', '{}', '{}', '{}');".format(name, username, password, email,))
             mysql.connection.commit()
             msg = 'You have successfully registered!'
-            return render_template('index.html', error=msg)
+            return render_template('index.html', success=msg)
 
     elif request.method == 'POST':
         # Form is empty... (no POST data)
