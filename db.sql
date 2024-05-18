@@ -4,6 +4,7 @@ CREATE TABLE users (
   username VARCHAR(255) NOT NULL UNIQUE,
   password VARCHAR(255) NOT NULL,
   email VARCHAR(255) NOT NULL UNIQUE,
+  profile_image VARCHAR(255),
   2fa_enabled BOOLEAN DEFAULT FALSE,
   2fa_secret VARCHAR(255)
 )

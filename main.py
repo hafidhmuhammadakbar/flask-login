@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_mysqldb import MySQL
 import MySQLdb.cursors
 import re
@@ -8,6 +8,9 @@ import qrcode
 from io import BytesIO
 import base64
 import requests
+from werkzeug.utils import secure_filename
+import os
+import uuid
 
 app = Flask(__name__)
 
@@ -18,6 +21,10 @@ app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = ''
 app.config['MYSQL_DB'] = 'pythonlogin'
+
+# image upload
+app.config['UPLOAD_FOLDER'] = 'static/uploads/'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 # Initialize MySQL
 mysql = MySQL(app)
@@ -148,6 +155,9 @@ def home():
     return redirect(url_for('login'))
 
 # Profile
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 @app.route('/flasklogin/profile')
 def profile():
     if 'loggedin' in session:
@@ -155,6 +165,49 @@ def profile():
         cursor.execute('SELECT * FROM users WHERE id = %s', (session['id'],))
         account = cursor.fetchone()
         return render_template('profile.html', account=account)
+    return redirect(url_for('login'))
+
+@app.route('/flasklogin/profile/edit', methods=['GET', 'POST'])
+def edit_profile():
+    if 'loggedin' in session:
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('SELECT * FROM users WHERE id = %s', (session['id'],))
+        account = cursor.fetchone()
+
+        if request.method == 'POST':
+            name = request.form['name']
+            username = request.form['username']
+            email = request.form['email']
+            profile_image = request.files['profile_image']
+
+            if profile_image and allowed_file(profile_image.filename):
+                # Generate a random filename
+                ext = profile_image.filename.rsplit('.', 1)[1].lower()
+                filename = f"{uuid.uuid4().hex}.{ext}"
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+
+                # Save the new profile image
+                profile_image.save(file_path)
+
+                # Delete the old profile image if it exists
+                old_image = account.get('profile_image')
+                if old_image:
+                    old_image_path = os.path.join(app.root_path, 'static', old_image.replace('/', os.sep))
+                    if os.path.exists(old_image_path):
+                        os.remove(old_image_path)
+
+                # Update the database with the new image relative path
+                image_url = os.path.join('uploads', filename).replace(os.sep, '/')
+                cursor.execute('UPDATE users SET name = %s, username = %s, email = %s, profile_image = %s WHERE id = %s', 
+                            (name, username, email, image_url, session['id']))
+            else:
+                cursor.execute('UPDATE users SET name = %s, username = %s, email = %s WHERE id = %s', 
+                            (name, username, email, session['id']))
+            mysql.connection.commit()
+            flash('Profile updated successfully!', 'success')
+            return redirect(url_for('profile'))
+
+        return render_template('edit_profile.html', account=account)
     return redirect(url_for('login'))
 
 @app.route('/flasklogin/2fa')

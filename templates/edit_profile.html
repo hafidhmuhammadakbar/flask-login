@@ -1,0 +1,42 @@
+{% extends 'layout.html' %}
+
+{% block title %}Edit Profile{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Edit Profile</h2>
+    <form method="post" enctype="multipart/form-data" novalidate>
+        <div class="mb-3">
+            <label for="name" class="form-label">Name</label>
+            <input type="text" class="form-control" id="name" name="name" value="{{ account['name'] }}" required>
+            <div class="invalid-feedback">
+                Please enter your name.
+            </div>
+        </div>
+        <div class="mb-3">
+            <label for="username" class="form-label">Username</label>
+            <input type="text" class="form-control" id="username" name="username" value="{{ account['username'] }}" required>
+            <div class="invalid-feedback">
+                Please enter your username.
+            </div>
+        </div>
+        <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" class="form-control" id="email" name="email" value="{{ account['email'] }}" required>
+            <div class="invalid-feedback">
+                Please enter a valid email address.
+            </div>
+        </div>
+        <div class="mb-3">
+            <label for="profile_image" class="form-label">Profile Image</label>
+            <input type="file" class="form-control" id="profile_image" name="profile_image" accept="image/*">
+            <div class="invalid-feedback">
+                Please select a valid image file.
+            </div>
+        </div>
+        <div class="mb-3">
+            <button type="submit" class="btn btn-primary">Update Profile</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
