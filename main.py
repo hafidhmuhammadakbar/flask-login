@@ -180,7 +180,34 @@ def edit_profile():
             email = request.form['email']
             profile_image = request.files['profile_image']
 
+            # check if username or email already exists
+            cursor.execute('SELECT * FROM users WHERE (username = %s OR email = %s) AND id != %s', (username, email, session['id']))
+            account = cursor.fetchone()
+            if account:
+                flash('Username or email already exists!', 'error')
+                return redirect(url_for('edit_profile'))
+            
+            # validation input
+            if not re.match(r'[A-Za-z0-9]+', username):
+                flash('Username must contain only characters and numbers!', 'error')
+                return redirect(url_for('edit_profile'))
+            elif len(username) < 4:
+                flash('Username must be at least 4 characters long!', 'error')
+                return redirect(url_for('edit_profile'))
+            elif not re.match(r'[^@]+@[^@]+\.[^@]+', email):
+                flash('Invalid email address!', 'error')
+                return redirect(url_for('edit_profile'))
+            elif len(profile_image.filename) > 0 and not allowed_file(profile_image.filename):
+                flash('Invalid file type! Only PNG, JPG, and JPEG files are allowed.', 'error')
+                return redirect(url_for('edit_profile'))
+
             if profile_image and allowed_file(profile_image.filename):
+                # Check the file size
+                if len(profile_image.read()) > 5 * 1024 * 1024:  # 5 MB limit
+                    flash('File size must be under 5 MB.', 'error')
+                    return redirect(url_for('edit_profile'))
+                profile_image.seek(0)  # Reset file pointer after size check
+
                 # Generate a random filename
                 ext = profile_image.filename.rsplit('.', 1)[1].lower()
                 filename = f"{uuid.uuid4().hex}.{ext}"
@@ -188,7 +215,9 @@ def edit_profile():
 
                 # Save the new profile image
                 profile_image.save(file_path)
-
+                
+                cursor.execute('SELECT * FROM users WHERE id = %s', (session['id'],))
+                account = cursor.fetchone()
                 # Delete the old profile image if it exists
                 old_image = account.get('profile_image')
                 if old_image:
