@@ -16,7 +16,7 @@ app.secret_key = 'loginpython'
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = ''
-app.config['MYSQL_DB'] = 'pythonlogin'
+app.config['MYSQL_DB'] = 'pythonlogin_vulnerables'
 
 # Intialize MySQL
 mysql = MySQL(app)
