@@ -80,7 +80,7 @@ def login():
                 return redirect(url_for('home'))
         else:
             session['login_attempts'] += 1
-            msg = 'Incorrect username/password!'
+            msg = 'Incorrect username or password'
 
     return render_template('index.html', error=msg)
 
@@ -280,4 +280,4 @@ def disable_2fa():
     return redirect(url_for('login'))
 
 if __name__ == "__main__":
-    app.run(debug=True) 
+    app.run(host='0.0.0.0', debug=True) 
