@@ -45,25 +45,18 @@ def login():
         username = request.form['username']
         password = request.form['password']
 
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT * FROM users WHERE username = %s', (username,))
-        account = cursor.fetchone()
-
-        if account and bcrypt.checkpw(password.encode(), account['password'].encode()):
-            session['login_attempts'] = 0  # Reset login attempts on successful login
-            if account['2fa_enabled']:
-                session['2fa_pending'] = True
-                session['id'] = account['id']
-                session['username'] = account['username']
-                return redirect(url_for('two_factor_auth'))
-            else:
-                session['loggedin'] = True
-                session['id'] = account['id']
-                session['username'] = account['username']
-                return redirect(url_for('home'))
-        else:
-            session['login_attempts'] += 1
-            msg = 'Incorrect username/password!'
+        # validation input
+        if not username or not password:
+            msg = 'Please fill out the form!'
+            return render_template('index.html', error=msg)
+        # elif len(username) < 4:
+        #     msg = 'Username must be at least 4 characters long!'
+        #     return render_template('index.html', error=msg)
+        # elif len(password) < 8:
+        #     msg = 'Password must be at least 8 characters long!'
+        #     return render_template('index.html', error=msg)
+        # elif not re.match(r'[A-Za-z0-9]+', username):
+        #         msg = 'Username must contain only characters and numbers!'
 
         # Verify reCAPTCHA if the user has failed more than 3 times
         if session['login_attempts'] >= 3:
@@ -85,7 +78,28 @@ def login():
                 msg = 'Invalid reCAPTCHA. Please try again.'
                 return render_template('index.html', error=msg)
 
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('SELECT * FROM users WHERE username = %s', (username,))
+        account = cursor.fetchone()
+
+        if account and bcrypt.checkpw(password.encode(), account['password'].encode()):
+            session['login_attempts'] = 0  # Reset login attempts on successful login
+            if account['2fa_enabled']:
+                session['2fa_pending'] = True
+                session['id'] = account['id']
+                session['username'] = account['username']
+                return redirect(url_for('two_factor_auth'))
+            else:
+                session['loggedin'] = True
+                session['id'] = account['id']
+                session['username'] = account['username']
+                return redirect(url_for('home'))
+        else:
+            session['login_attempts'] += 1
+            msg = 'Incorrect username or password!'
+
     return render_template('index.html', error=msg)
+
 
 # Register
 @app.route('/flasklogin/register', methods=['GET', 'POST'])
