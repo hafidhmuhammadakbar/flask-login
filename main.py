@@ -11,6 +11,7 @@ import requests
 from werkzeug.utils import secure_filename
 import os
 import uuid
+from datetime import datetime, timedelta, timezone
 
 app = Flask(__name__)
 
@@ -38,8 +39,23 @@ def index():
 @app.route('/flasklogin/', methods=['GET', 'POST'])
 def login():
     msg = ''
+    is_banned = False
+
     if 'login_attempts' not in session:
         session['login_attempts'] = 0
+        session['last_attempt_time'] = datetime.min.replace(tzinfo=timezone.utc)
+
+    current_time = datetime.now(timezone(timedelta(hours=7)))
+    ban_time = session.get('ban_time', None)
+
+    # Check if the user was banned but the ban period is over
+    if ban_time and current_time >= ban_time:
+        session['login_attempts'] = 0
+        session.pop('ban_time', None)
+    elif ban_time and current_time < ban_time:
+        is_banned = True
+        time_left = (ban_time - current_time).seconds
+        msg = f'Too many failed login attempts. Please try again in {time_left} seconds.'
 
     if request.method == 'POST' and 'username' in request.form and 'password' in request.form:
         username = request.form['username']
@@ -48,22 +64,14 @@ def login():
         # validation input
         if not username or not password:
             msg = 'Please fill out the form!'
-            return render_template('index.html', error=msg)
-        # elif len(username) < 4:
-        #     msg = 'Username must be at least 4 characters long!'
-        #     return render_template('index.html', error=msg)
-        # elif len(password) < 8:
-        #     msg = 'Password must be at least 8 characters long!'
-        #     return render_template('index.html', error=msg)
-        # elif not re.match(r'[A-Za-z0-9]+', username):
-        #         msg = 'Username must contain only characters and numbers!'
+            return render_template('index.html', error=msg, is_banned=is_banned)
 
         # Verify reCAPTCHA if the user has failed more than 3 times
         if session['login_attempts'] >= 3:
             recaptcha_response = request.form.get('g-recaptcha-response')
             if not recaptcha_response:
                 msg = 'Please complete the reCAPTCHA'
-                return render_template('index.html', error=msg)
+                return render_template('index.html', error=msg, is_banned=is_banned)
 
             recaptcha_secret = '6LcFr5spAAAAAISIBeHQAguCWzyF14JXWvOfgP7J'
             recaptcha_verify_url = 'https://www.google.com/recaptcha/api/siteverify'
@@ -76,7 +84,7 @@ def login():
 
             if not result.get('success'):
                 msg = 'Invalid reCAPTCHA. Please try again.'
-                return render_template('index.html', error=msg)
+                return render_template('index.html', error=msg, is_banned=is_banned)
 
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('SELECT * FROM users WHERE username = %s', (username,))
@@ -84,6 +92,7 @@ def login():
 
         if account and bcrypt.checkpw(password.encode(), account['password'].encode()):
             session['login_attempts'] = 0  # Reset login attempts on successful login
+            session.pop('ban_time', None)  # Remove ban time if it exists
             if account['2fa_enabled']:
                 session['2fa_pending'] = True
                 session['id'] = account['id']
@@ -96,15 +105,31 @@ def login():
                 return redirect(url_for('home'))
         else:
             session['login_attempts'] += 1
-            msg = 'Incorrect username or password!'
+            session['last_attempt_time'] = current_time
+            if session['login_attempts'] > 10:
+                session['ban_time'] = current_time + timedelta(minutes=2)
+                msg = 'Too many failed login attempts. You are banned for 2 minutes.'
+                is_banned = True
+            else:
+                msg = 'Incorrect username or password'
 
-    return render_template('index.html', error=msg)
+    return render_template('index.html', error=msg, is_banned=is_banned)
 
 
 # Register
 @app.route('/flasklogin/register', methods=['GET', 'POST'])
 def register():
     msg = ''
+
+    # Check if user is loggedin
+    if 'loggedin' in session:
+        return redirect(url_for('home'))
+    
+    # check if user get ban
+    if session['login_attempts'] > 10:
+        return redirect(url_for('login'))
+    
+
     if request.method == 'POST' and 'username' in request.form and 'password' in request.form and 'email' in request.form:
         name = request.form['name']
         username = request.form['username']
