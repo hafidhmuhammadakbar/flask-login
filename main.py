@@ -132,9 +132,9 @@ def register():
         return redirect(url_for('home'))
     
     # check if user get ban
-    if session['login_attempts'] > 10:
-        return redirect(url_for('login'))
-    
+    if 'login_attempts' in session:
+        if session['login_attempts'] > 10:
+            return redirect(url_for('login'))
 
     if request.method == 'POST' and 'username' in request.form and 'password' in request.form and 'email' in request.form:
         name = request.form['name']
