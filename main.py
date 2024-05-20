@@ -55,7 +55,8 @@ def login():
     elif ban_time and current_time < ban_time:
         is_banned = True
         time_left = (ban_time - current_time).seconds
-        msg = f'Too many failed login attempts. Please try again in {time_left} seconds.'
+        # msg = f'Too many failed login attempts. Please try again in {time_left} seconds.'
+        msg = 'Invalid'
 
     if request.method == 'POST' and 'username' in request.form and 'password' in request.form:
         username = request.form['username']
@@ -63,14 +64,16 @@ def login():
 
         # validation input
         if not username or not password:
-            msg = 'Please fill out the form!'
+            # msg = 'Please fill out the form!'
+            msg = 'Invalid'
             return render_template('index.html', error=msg, is_banned=is_banned)
 
         # Verify reCAPTCHA if the user has failed more than 3 times
-        if session['login_attempts'] >= 3:
+        if session['login_attempts'] >= 0:
             recaptcha_response = request.form.get('g-recaptcha-response')
             if not recaptcha_response:
-                msg = 'Please complete the reCAPTCHA'
+                # msg = 'Please complete the reCAPTCHA'
+                msg = 'Invalid'
                 return render_template('index.html', error=msg, is_banned=is_banned)
 
             recaptcha_secret = '6LcFr5spAAAAAISIBeHQAguCWzyF14JXWvOfgP7J'
@@ -83,7 +86,8 @@ def login():
             result = recaptcha_res.json()
 
             if not result.get('success'):
-                msg = 'Invalid reCAPTCHA. Please try again.'
+                # msg = 'Invalid reCAPTCHA. Please try again.'
+                msg = 'Invalid'
                 return render_template('index.html', error=msg, is_banned=is_banned)
 
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -108,10 +112,12 @@ def login():
             session['last_attempt_time'] = current_time
             if session['login_attempts'] > 10:
                 session['ban_time'] = current_time + timedelta(minutes=2)
-                msg = 'Too many failed login attempts. You are banned for 2 minutes.'
+                # msg = 'Too many failed login attempts. You are banned for 2 minutes.'
+                msg = 'Invalid'
                 is_banned = True
             else:
-                msg = 'Incorrect username or password'
+                # msg = 'Incorrect username or password'
+                msg = 'Invalid'
 
     return render_template('index.html', error=msg, is_banned=is_banned)
 
