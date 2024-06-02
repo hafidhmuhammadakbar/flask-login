@@ -111,7 +111,13 @@ def login():
                 msg = 'Too many failed login attempts. You are banned for 2 minutes.'
                 is_banned = True
             else:
-                msg = 'Incorrect username or password'
+                # Check if username exists
+                cursor.execute('SELECT COUNT(*) FROM users WHERE username = %s', (username,))
+                count = cursor.fetchone()['COUNT(*)']
+                if count == 0:
+                    msg = 'This username is not registered'
+                else:
+                    msg = 'Incorrect username or password'
 
     return render_template('index.html', error=msg, is_banned=is_banned)
 
