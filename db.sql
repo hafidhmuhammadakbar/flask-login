@@ -9,4 +9,10 @@ CREATE TABLE users (
   2fa_secret VARCHAR(255)
 )
 
+CREATE TABLE images (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  description VARCHAR(255) NOT NULL,
+  image_url VARCHAR(255) NOT NULL
+)
+
 INSERT INTO users (name, username, password, email, is_2fa_enabled) VALUES ('admin', 'admin', 'admin', 'admin@gmail.com');

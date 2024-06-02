@@ -21,7 +21,7 @@ app.secret_key = 'loginpython'
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = ''
-app.config['MYSQL_DB'] = 'pythonlogin'
+app.config['MYSQL_DB'] = 'pythonlogin_fileinject'
 
 # image upload
 app.config['UPLOAD_FOLDER'] = 'static/uploads/'
@@ -111,7 +111,13 @@ def login():
                 msg = 'Too many failed login attempts. You are banned for 2 minutes.'
                 is_banned = True
             else:
-                msg = 'Incorrect username or password'
+                # Check if username exists
+                cursor.execute('SELECT COUNT(*) FROM users WHERE username = %s', (username,))
+                count = cursor.fetchone()['COUNT(*)']
+                if count == 0:
+                    msg = 'This username is not registered'
+                else:
+                    msg = 'Incorrect username or password'
 
     return render_template('index.html', error=msg, is_banned=is_banned)
 
@@ -194,10 +200,10 @@ def home():
     
     return redirect(url_for('login'))
 
-# Profile
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+# Profile
 @app.route('/flasklogin/profile')
 def profile():
     if 'loggedin' in session:
@@ -364,6 +370,65 @@ def disable_2fa():
         mysql.connection.commit()
         return redirect(url_for('home'))
     return redirect(url_for('login'))
+
+# File inject
+# @app.route('/flasklogin/fileinject', methods=['GET'])
+# def get_file_inject():
+#     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+#     cursor.execute('SELECT * FROM images')
+#     images_all = cursor.fetchall()  # Use fetchall() to get all images
+#     return render_template('file_inject.html', images=images_all)
+
+@app.route('/flasklogin/fileinject', methods=['GET'])
+def get_file_inject():
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute('SELECT * FROM images')
+    all_files = cursor.fetchall()  # Use fetchall() to get all files
+
+    # Split files into images and non-images based on file extension
+    images = []
+    non_images = []
+    for file in all_files:
+        file_url = file.get('image_url', '')
+        file_extension = os.path.splitext(file_url)[1].lstrip('.') if file_url else ''
+        if file_extension.lower() in ALLOWED_EXTENSIONS:
+            images.append(file)
+        else:
+            non_images.append(file)
+
+    return render_template('file_inject.html', images=images, non_images=non_images)
+
+@app.route('/flasklogin/fileinject/post', methods=['POST'])
+def file_inject():
+    if request.method == 'POST':
+        # description = request.form['description']
+        file = request.files['file']
+
+        if file:
+
+            # Check the file size
+            if len(file.read()) > 5 * 1024 * 1024:
+                flash('File size must be under 5 MB.', 'error')
+                return redirect(url_for('get_file_inject'))
+            file.seek(0)
+
+            # Generate a random filename
+            ext = file.filename.rsplit('.', 1)[1].lower()
+            filename = f"{uuid.uuid4().hex}.{ext}"
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+
+            # Save the new image
+            file.save(file_path)
+
+            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor.execute('INSERT INTO images (image_url) VALUES (%s)', (filename,))
+            mysql.connection.commit()
+            flash('File uploaded successfully!', 'success')
+            return redirect(url_for('get_file_inject'))
+        else:
+            flash('No file selected!', 'error')
+            return redirect(url_for('get_file_inject'))
+    return redirect(url_for('get_file_inject'))
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", debug=True)
