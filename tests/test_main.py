@@ -26,10 +26,18 @@ class FlaskLoginTestCase(unittest.TestCase):
             self.assertEqual(rv.status_code, 200)
             self.assertIn(b'Logged in successfully', rv.data)
 
-            # Test login with invalid credentials
+            # Test login with invalid password
             rv = client.post('/flasklogin/', data=dict(
-                username='testuser',
+                username='hafidhakb',
                 password='wrongpassword'
+            ), follow_redirects=True)
+            self.assertEqual(rv.status_code, 200)
+            self.assertIn(b'Incorrect username or password', rv.data)
+            
+            # Test login with invalid username
+            rv = client.post('/flasklogin/', data=dict(
+                username='wrongusername',
+                password='hafidhakb'
             ), follow_redirects=True)
             self.assertEqual(rv.status_code, 200)
             self.assertIn(b'Incorrect username or password', rv.data)
